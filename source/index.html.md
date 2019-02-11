@@ -228,7 +228,7 @@ Each of these types is a different type of input
 
 
 ---------------------------------------------------------
-#Server Calls
+<!-- #Server Calls
 
 ```python
 from requests import get
@@ -398,3 +398,4 @@ req = post(url, headers=headers, data=body)
 If status code of post request isn't <code>200</code> please end the stream.
 </aside>
 
+ -->
