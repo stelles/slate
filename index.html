@@ -232,20 +232,6 @@
                   </li>
               </ul>
           </li>
-          <li>
-            <a href="#server-calls" class="toc-h1 toc-link" data-title="server-calls">Server Calls</a>
-              <ul class="toc-list-h2">
-                  <li>
-                    <a href="#load-data-connectors" class="toc-h2 toc-link" data-title="load-data-connectors">Load Data Connectors</a>
-                  </li>
-                  <li>
-                    <a href="#start-data-stream" class="toc-h2 toc-link" data-title="start-data-stream">Start Data Stream</a>
-                  </li>
-                  <li>
-                    <a href="#return-data" class="toc-h2 toc-link" data-title="return-data">Return Data</a>
-                  </li>
-              </ul>
-          </li>
       </div>
         <ul class="toc-footer">
             <li><a href='https://github.com/lord/slate'>Documentation Powered by Slate</a></li>
@@ -255,8 +241,28 @@
       <div class="dark-box"></div>
       <div class="content">
         <h1 id='introduction'>Introduction</h1>
-<p>The Data Connector (DC) will be an HTTP Rest API server which the Stratifyd Web Client will push queries to the DC server and the DC server will retrieve the data based on the query and push it back to the Stratifyd server for analysis. Please look at this <a href="https://imgur.com/XLWPOsS">server flow diagram</a> for a quick understanding of how the flow will act. </p>
+<p>The Data Connector (DC) will be a microservice container that encapsulates the information about the data source and the process which pulls down the data and pushed it to Stratifyd.</p>
+
+<p>The data connector is defined three distinct features:
+1. Meta information
+  - Defines attributes of the data connector 
+  - Answers questions like, What is the source? What user inputs we need?
+  - Provides input parameters (generalized input types)
+  - Description about what the data will look like
+  - Summarized by a JSON standard
+2. Aggregate data
+  - Given the inputs, pull down, aggregate the data requsted
+  - Ex: Given an Amazon URL - pull down all reviews for that URL
+  - Return data to the DC server through HTTP communication
+3. Communicate information
+  - Bad user input? Send error code
+  - Finished aggregating/dumping data. Send finished code
+  - Streaming data into DC server - (dumping the data requested)</p>
+
+<p>Those three things encapsulate the DC microservice and we will have them all defined.</p>
 <h1 id='data-connector'>Data Connector</h1><h2 id='fields'>Fields</h2>
+<p>The data connector can be defined by a JSON oject seen to the right. This JSON encapsultes the meta data about the data connector.</p>
+
 <blockquote>
 <p>Example data connector looks like this.</p>
 </blockquote>
@@ -300,15 +306,14 @@
 
 <p><code>subdomain</code> - array of domains which will have access to the data connector (default all access)</p>
 
-<p><code>role</code> - array of predefined roles to categorize the data connector (defaults to category all)</p>
+<!-- `role` - array of predefined roles to categorize the data connector (defaults to category all)
 
-<ul>
-<li><code>cx</code> - Customer Experience</li>
-<li><code>pm</code> - Product Management</li>
-<li><code>research</code> - Research</li>
-<li><code>hr</code> - Human Resources</li>
-<li><code>marketing</code> - Marketing</li>
-</ul>
+* `cx` - Customer Experience
+* `pm` - Product Management
+* `research` - Research
+* `hr` - Human Resources
+* `marketing` - Marketing
+ -->
 <h2 id='input-parameters'>Input Parameters</h2>
 <blockquote>
 <p>Examples</p>
@@ -423,147 +428,178 @@
 </ul>
 
 <hr>
-<h1 id='server-calls'>Server Calls</h1><pre class="highlight python tab-python"><code><span class="kn">from</span> <span class="nn">requests</span> <span class="kn">import</span> <span class="n">get</span>
 
-<span class="n">req</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="s">"http://localhost/external"</span><span class="p">)</span>
-</code></pre>
-<blockquote>
-<p>The above will return all data connectors available on this server.</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="w">  </span><span class="p">[</span><span class="w">
-    </span><span class="p">{</span><span class="w">
-      </span><span class="s2">"name"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"amazon"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"display_name"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"Amazon"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"params"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-        </span><span class="p">{</span><span class="w">
-          </span><span class="s2">"regex"</span><span class="p">:</span><span class="w"> </span><span class="s2">"amazon</span><span class="se">\\</span><span class="s2">.[a-z]{2,3}.*</span><span class="se">\\</span><span class="s2">/([A-Z0-9]{10})"</span><span class="p">,</span><span class="w"> 
-          </span><span class="s2">"multi"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> 
-          </span><span class="s2">"display_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Amazon Item URL"</span><span class="p">,</span><span class="w"> 
-          </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"item_url"</span><span class="p">,</span><span class="w"> 
-          </span><span class="s2">"req"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> 
-          </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span><span class="p">,</span><span class="w"> 
-          </span><span class="s2">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Copy the Amazon item URL and paste it in the field. We can handle different languages."</span><span class="w">
-        </span><span class="p">}</span><span class="w">
-      </span><span class="p">],</span><span class="w">
-      </span><span class="s2">"enabled"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"description"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"Copy the Amazon Product url(s) and Stratifyd will analyze the product reviews."</span><span class="w">
-      </span><span class="s2">"date_range"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"image_url"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"https://beta.stratifyd.com/images/dataconnectors/icon_amazon.svg"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"roles"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"pm"</span><span class="w">
-    </span><span class="p">}</span><span class="w">
-  </span><span class="p">]</span><span class="w">
-</span></code></pre>
-<p>The DC HTTP Server only must handle 2 calls, a GET request for Data connector parameters and POST request that begin the data gathering process which then POST&#39;s the data back to the Stratifyd server.</p>
-<h2 id='load-data-connectors'>Load Data Connectors</h2>
-<p>This will be the <strong>only</strong> GET reqeuest needed for the DC server.  The response will be a JSON array of <a href="#data-connector">data connectors</a>. The endpoint will be <code>/external</code>. There will be no URL parameters or special headers.</p>
-<h2 id='start-data-stream'>Start Data Stream</h2>
-<p>The DC server process once the query data request is made can be found <a href="https://imgur.com/PJ9clb8">here</a>.  Please review the decision tree which the DC server should follow.</p>
-<pre class="highlight python tab-python"><code><span class="kn">from</span> <span class="nn">requests</span> <span class="kn">import</span> <span class="n">post</span>
+<!-- #Server Calls
 
-<span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">"start_date"</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
-    <span class="s">"end_date"</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
-    <span class="s">"item_url"</span> <span class="p">:</span> <span class="s">"https://www.amazon.com/gp/product/B0013JOK8K"</span>
-<span class="p">}</span>
+```python
+from requests import get
 
-<span class="c">### These url params are important for returning data please save them</span>
-<span class="n">url_params</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">'token'</span><span class="p">:</span>  <span class="err">$</span><span class="n">ACCESS_TOKEN</span><span class="p">,</span>
-    <span class="s">'domain'</span><span class="p">:</span> <span class="n">SUBDOMAIN</span><span class="p">,</span>
-    <span class="s">"id"</span><span class="p">:</span> <span class="err">$</span><span class="n">STREAM_ID</span><span class="p">,</span>
-<span class="p">}</span>
+req = get("http://localhost/external")
+```
 
-<span class="n">req</span> <span class="o">=</span> <span class="n">post</span><span class="p">(</span><span class="s">"http://localhost/external/amazon"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
-</code></pre>
-<blockquote>
-<p>Above request will return <a href="#stratifyd-indexes">indexes</a> for the analysis. Example response below</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="w">  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"text_index"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"review_text"</span><span class="p">],</span><span class="w">
-    </span><span class="s2">"date_index"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="s2">"unknown"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"review_date"</span><span class="p">,</span><span class="w">
-    </span><span class="p">}</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span></code></pre><h3 id='stratifyed-indexes'>Stratifyed Indexes</h3>
-<p>These indexes are used for our analysis engine to process specfic fields. The basic format is <code>index_type : field_name</code></p>
+> The above will return all data connectors available on this server.
 
-<blockquote>
-<p>Example Indexes</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="w">  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"text_index"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-      </span><span class="s2">"comment"</span><span class="p">,</span><span class="w"> 
-      </span><span class="s2">"title"</span><span class="w">
-    </span><span class="p">]</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span></code></pre><pre class="highlight json tab-json"><code><span class="w">  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"date_index"</span><span class="w"> </span><span class="p">:{</span><span class="w">
-      </span><span class="err">'unknown'</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="err">'review_date'</span><span class="w">
-    </span><span class="p">}</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span></code></pre><pre class="highlight json tab-json"><code><span class="w">  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"geo_index"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="s2">"global"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"customer_country"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"subglobal"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"customer_state"</span><span class="p">,</span><span class="w">
-      </span><span class="s2">"local"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"customer_city"</span><span class="w">
-    </span><span class="p">}</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span></code></pre><h4 id='text'>Text</h4>
-<p><code>text_index</code> - array of indexes used for textual analysis</p>
-<h4 id='date'>Date</h4>
-<p><code>date_index</code> - nested indexes with options used for temporal analysis</p>
+```json
+  [
+    {
+      "name" : "amazon",
+      "display_name" : "Amazon",
+      "params" : [
+        {
+          "regex": "amazon\\.[a-z]{2,3}.*\\/([A-Z0-9]{10})", 
+          "multi": true, 
+          "display_name": "Amazon Item URL", 
+          "name": "item_url", 
+          "req": true, 
+          "type": "string", 
+          "description": "Copy the Amazon item URL and paste it in the field. We can handle different languages."
+        }
+      ],
+      "enabled" : true,
+      "description" : "Copy the Amazon Product url(s) and Stratifyd will analyze the product reviews."
+      "date_range" : true,
+      "image_url" : "https://beta.stratifyd.com/images/dataconnectors/icon_amazon.svg",
+      "roles" : "pm"
+    }
+  ]
+```
 
-<ul>
-<li><code>unknown</code> - field with a string of text that needs parsing into a date</li>
-<li><code>timestamp</code> - either second or milisecond unix timestamp </li>
-<li><code>day</code> - integer day of the month</li>
-<li><code>month</code> - integer month of the year</li>
-<li><code>year</code> - year </li>
-</ul>
-<h4 id='geo'>Geo</h4>
-<p><code>geo_index</code> - nested indexes that contain fields with varying geographical information</p>
 
-<ul>
-<li><code>unknown</code> - geographical string we attempt to parse</li>
-<li><code>global</code>  - country<br></li>
-<li><code>subglobal</code> - state/providence </li>
-<li><code>local</code> - city </li>
-<li><code>sublocal</code> - street name </li>
-<li><code>postcode</code> - postal code </li>
-<li><code>latitude</code> - latitude column </li>
-<li><code>logintude</code> - longingtude column </li>
-<li><code>latitude_longitude</code> - column with lat/long in that order </li>
-<li><code>longitude_latitude</code> - column with long/lat in that order </li>
-<li><code>ip_address</code> - IP address column<br></li>
-<li><code>phone_number</code> - phone # </li>
-</ul>
-<h2 id='return-data'>Return Data</h2>
-<p>To return data, using the url parameters from the <a href="#start-date-stream">initial data request</a>.</p>
+The DC HTTP Server only must handle 2 calls, a GET request for Data connector parameters and POST request that begin the data gathering process which then POST's the data back to the Stratifyd server.
 
-<p>Using the request schema, host and port from the port request along with the url parameters we can construct the return POST requests. The url will look like this <code>https://alphaapi.stratifd.com/streams/5ace79e3b2308449f3608159/documents</code>.</p>
+## Load Data Connectors
+This will be the **only** GET reqeuest needed for the DC server.  The response will be a JSON array of [data connectors](#data-connector). The endpoint will be `/external`. There will be no URL parameters or special headers.
 
-<p>The following headers will looke like this</p>
+## Start Data Stream
 
-<p>Using the following headers</p>
+The DC server process once the query data request is made can be found [here](https://imgur.com/PJ9clb8).  Please review the decision tree which the DC server should follow.
 
-<ul>
-<li><code>Content-Type : &#39;application/json&#39;</code></li>
-<li><code>X-Taste-Tmp : ACCESS_TOKEN</code></li>
-<li><code>X-Taste-App : SUBDOMAIN</code></li>
-</ul>
-<pre class="highlight python tab-python"><code><span class="kn">from</span> <span class="nn">requests</span> <span class="kn">import</span> <span class="n">post</span>
-<span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">'Content-Type'</span> <span class="p">:</span> <span class="s">'application/json'</span><span class="p">,</span>
-    <span class="s">'X-Taste-Tmp'</span> <span class="p">:</span> <span class="n">ACCESS_TOKEN</span><span class="p">,</span>
-    <span class="s">'X-Taste-App'</span> <span class="p">:</span> <span class="n">SUBDOMAIN</span>
-<span class="p">}</span>
-<span class="n">url</span> <span class="o">=</span> <span class="s">"https://alphaapi.stratifyd.com/streams/</span><span class="si">%</span><span class="s">s/documents"</span> <span class="o">%</span> <span class="err">$</span><span class="n">STREAM_ID</span>
-<span class="n">body</span> <span class="o">=</span> <span class="p">[</span><span class="n">doc1</span><span class="p">,</span> <span class="n">doc2</span><span class="p">,</span> <span class="n">doc3</span><span class="p">]</span> 
-<span class="n">req</span> <span class="o">=</span> <span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
-</code></pre>
+```python
+from requests import post
+
+body = {
+    "start_date" : null,
+    "end_date" : null,
+    "item_url" : "https://www.amazon.com/gp/product/B0013JOK8K"
+}
+
+### These url params are important for returning data please save them
+url_params = {
+    'token':  $ACCESS_TOKEN,
+    'domain': SUBDOMAIN,
+    "id": $STREAM_ID,
+}
+
+req = post("http://localhost/external/amazon", data=body)
+```
+
+> Above request will return [indexes](#stratifyd-indexes) for the analysis. Example response below
+
+```json
+  {
+    "text_index" : ["review_text"],
+    "date_index" : {
+      "unknown" : "review_date",
+    }
+  }
+```
+
+###Stratifyed Indexes
+These indexes are used for our analysis engine to process specfic fields. The basic format is `index_type : field_name`
+
+> Example Indexes
+
+```json
+  {
+    "text_index" : [
+      "comment", 
+      "title"
+    ]
+  }
+```
+
+```json
+  {
+    "date_index" :{
+      'unknown' : 'review_date'
+    }
+  }
+```
+
+```json
+  {
+    "geo_index" : {
+      "global" : "customer_country",
+      "subglobal" : "customer_state",
+      "local" : "customer_city"
+    }
+  }
+```
+
+####Text
+`text_index` - array of indexes used for textual analysis
+
+
+####Date
+`date_index` - nested indexes with options used for temporal analysis
+
+* `unknown` - field with a string of text that needs parsing into a date
+* `timestamp` - either second or milisecond unix timestamp 
+* `day` - integer day of the month
+* `month` - integer month of the year
+* `year` - year 
+
+
+
+####Geo
+`geo_index` - nested indexes that contain fields with varying geographical information
+
+* `unknown` - geographical string we attempt to parse
+* `global`  - country  
+* `subglobal` - state/providence 
+* `local` - city 
+* `sublocal` - street name 
+* `postcode` - postal code 
+* `latitude` - latitude column 
+* `logintude` - longingtude column 
+* `latitude_longitude` - column with lat/long in that order 
+* `longitude_latitude` - column with long/lat in that order 
+* `ip_address` - IP address column  
+* `phone_number` - phone # 
+
+
+## Return Data
+To return data, using the url parameters from the [initial data request](#start-date-stream).
+
+Using the request schema, host and port from the port request along with the url parameters we can construct the return POST requests. The url will look like this `https://alphaapi.stratifd.com/streams/5ace79e3b2308449f3608159/documents`.
+
+The following headers will looke like this
+
+Using the following headers
+
+* `Content-Type : 'application/json'`
+* `X-Taste-Tmp : ACCESS_TOKEN`
+* `X-Taste-App : SUBDOMAIN`
+
+```python
+from requests import post
+headers = {
+    'Content-Type' : 'application/json',
+    'X-Taste-Tmp' : ACCESS_TOKEN,
+    'X-Taste-App' : SUBDOMAIN
+}
+url = "https://alphaapi.stratifyd.com/streams/%s/documents" % $STREAM_ID
+body = [doc1, doc2, doc3] 
+req = post(url, headers=headers, data=body)
+```
+
+
+
 <aside class="warning">
 If status code of post request isn't <code>200</code> please end the stream.
 </aside>
+
+ -->
 
       </div>
       <div class="dark-box">
