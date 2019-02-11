@@ -15,11 +15,32 @@ search: true
 
 # Introduction
 
-The Data Connector (DC) will be an HTTP Rest API server which the Stratifyd Web Client will push queries to the DC server and the DC server will retrieve the data based on the query and push it back to the Stratifyd server for analysis. Please look at this [server flow diagram](https://imgur.com/XLWPOsS) for a quick understanding of how the flow will act. 
+The Data Connector (DC) will be a microservice container that encapsulates the information about the data source and the process which pulls down the data and pushed it to Stratifyd.
+
+The data connector is defined three distinct features:
+1. Meta information
+  - Defines attributes of the data connector 
+  - Answers questions like, What is the source? What user inputs we need?
+  - Provides input parameters (generalized input types)
+  - Description about what the data will look like
+  - Summarized by a JSON standard
+2. Aggregate data
+  - Given the inputs, pull down, aggregate the data requsted
+  - Ex: Given an Amazon URL - pull down all reviews for that URL
+  - Return data to the DC server through HTTP communication
+3. Communicate information
+  - Bad user input? Send error code
+  - Finished aggregating/dumping data. Send finished code
+  - Streaming data into DC server - (dumping the data requested)
+
+Those three things encapsulate the DC microservice and we will have them all defined.
+
 
 
 # Data Connector
 ##Fields
+
+The data connector can be defined by a JSON oject seen to the right. This JSON encapsultes the meta data about the data connector.
 
 > Example data connector looks like this.
 
@@ -67,14 +88,14 @@ These fields are optional but allow for extra customization for the data connect
 
 `subdomain` - array of domains which will have access to the data connector (default all access)
 
-`role` - array of predefined roles to categorize the data connector (defaults to category all)
+<!-- `role` - array of predefined roles to categorize the data connector (defaults to category all)
 
 * `cx` - Customer Experience
 * `pm` - Product Management
 * `research` - Research
 * `hr` - Human Resources
 * `marketing` - Marketing
-
+ -->
 ##Input Parameters
 
 > Examples
